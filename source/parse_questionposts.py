@@ -5,8 +5,8 @@ from collections import defaultdict
 def read_file(file_name):
     with open(file_name, "r", errors='replace') as f:
         return f.readlines()
-    
-data = read_file("questionposts.csv")[1:]
+
+data = read_file("../../questionposts.csv")[1:]
 
 processed = []
 
