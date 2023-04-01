@@ -9,8 +9,12 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-```{r Filter the data}
+```{r date functions and constants}
 time_limit <- as.POSIXct("2016-08-05", format = "%Y-%m-%d")
+
+get_time <- function(time) {
+  return(as.POSIXct(time, format = "%Y-%m-%d %H:%M:%OS"))
+}
 ```
 
 ```{r Filter the data}
@@ -19,9 +23,16 @@ questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
 
 ```{r}
 questions <- read.csv("../../questions.csv") %>% 
-  filter(as.POSIXct(AskedOnUtc, format = "%Y-%m-%d %H:%M:%OS") > time_limit) %>%
+  filter(get_time(AskedOnUtc) > time_limit) %>%
   arrange(CategoryUno, QuestionUno) %>% 
   select(-c(CategoryUno, SubcategoryUno))
+```
+
+Identifying trends of questions being asked across time (from 2016-2022)
+
+```{r}
+questions %>%
+  filter()
 ```
 
 
