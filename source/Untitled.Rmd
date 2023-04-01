@@ -10,9 +10,21 @@ library(tidyverse)
 ```
 
 ```{r Filter the data}
-questionposts <- read.csv("../../questionposts.csv") %>% group_by(QuestionUno)
+time_limit <- as.POSIXct("2016-08-05", format = "%Y-%m-%d")
+```
+
+```{r Filter the data}
+questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
+```
+
+```{r}
 questions <- read.csv("../../questions.csv") %>% 
-  arrange(CategoryUno) %>% 
-  group_by(QuestionUno) %>%
+  filter(as.POSIXct(AskedOnUtc, format = "%Y-%m-%d %H:%M:%OS") > time_limit) %>%
+  arrange(CategoryUno, QuestionUno) %>% 
   select(-c(CategoryUno, SubcategoryUno))
+```
+
+
+```{r}
+merged_questionposts <- merge(questionpostsprocessed, questions, by = "QuestionUno")
 ```
