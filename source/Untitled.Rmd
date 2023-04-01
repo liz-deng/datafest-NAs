@@ -1,0 +1,19 @@
+---
+title: "test"
+output: html_document
+date: "2023-04-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+questionposts <- read.csv("../../questionposts.csv")
+questions <- read.csv("../../questions.csv")
+```
+```{r}
+# merged_dataset <- merge(questionposts, questions, by = "QuestionUno", all.x = TRUE)
+
+questionposts <- 
+```
