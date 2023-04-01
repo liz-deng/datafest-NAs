@@ -6,14 +6,13 @@ date: "2023-04-01"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
-```{r}
-questionposts <- read.csv("../../questionposts.csv")
-questions <- read.csv("../../questions.csv")
-```
-```{r}
-# merged_dataset <- merge(questionposts, questions, by = "QuestionUno", all.x = TRUE)
-
-questionposts <- 
+```{r Filter the data}
+questionposts <- read.csv("../../questionposts.csv") %>% group_by(QuestionUno)
+questions <- read.csv("../../questions.csv") %>% 
+  arrange(CategoryUno) %>% 
+  group_by(QuestionUno) %>%
+  select(-c(CategoryUno, SubcategoryUno))
 ```
