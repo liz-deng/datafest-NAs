@@ -7,13 +7,90 @@ date: "2023-04-01"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(usmap)
+```
+
+```{r date functions and constants}
+time_limit <- as.POSIXct("2016-08-05", format = "%Y-%m-%d", tz = "UTC")
+
+get_time <- function(time) {
+  return(as.POSIXct(time, format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
+}
 ```
 
 ```{r Filter the data}
-questionposts <- read.csv("../../questionposts.csv") %>% group_by(QuestionUno)
+questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
+```
+
+```{r}
 questions <- read.csv("../../questions.csv") %>% 
-  arrange(CategoryUno) %>% 
-  group_by(QuestionUno) %>%
-  select(-c(CategoryUno, SubcategoryUno))
-View(questions)
+  filter(get_time(AskedOnUtc) > time_limit) %>%
+  arrange(CategoryUno, QuestionUno) %>% 
+  select(-c(CategoryUno, SubcategoryUno)) %>%
+  mutate(AskedOnYear = year(get_time(AskedOnUtc)),
+         AskedOnMonth = month(get_time(AskedOnUtc)),
+         AskedOnMonthYear = (year(get_time(AskedOnUtc)) - 2016) * 12 + month(get_time(AskedOnUtc))
+    )
+```
+
+Identifying trends of questions being asked across time (from 2016-2022)
+
+```{r}
+questions %>%
+  group_by(AskedOnMonthYear, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnMonthYear, y = n, color = Category)) +
+  geom_line()
+
+questions %>%
+  group_by(AskedOnYear, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnYear, y = n, color = Category)) +
+  geom_line()
+
+questions %>%
+  group_by(AskedOnMonth, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnMonth, y = n, color = Category)) +
+  geom_line()
+```
+
+US Map showing change of categories
+
+```{r}
+df <- questions %>%
+  mutate(state = StateAbbr)
+
+vector_of_category <- c("Family and Children", "Other", "Housing and Homelessness", "Consumer Financial Questions", "Individual Rights", "Income Maintenance", "Health and Disability", "Education", "Juvenile")
+
+plot_map <- function(category) {
+  subset <- df %>%
+    filter(Category == category) %>%
+    group_by(state) %>%
+    summarize(
+      values = n(),
+    )
+  plot <- plot_usmap(data = subset) +
+  scale_fill_continuous(
+    low = "white", high = "red", name = "Questions", label = scales::comma
+  ) + theme(legend.position = "right") +
+    labs(title = paste(category))
+  plot
+} 
+
+map(vector_of_category, plot_map)
+
+```
+
+```{r}
+merged_questionposts <- merge(questionpostsprocessed, questions, by = "QuestionUno") %>%
+  select(Subcategory, PostTextProcessed) %>%
+  write.csv(file = "datasubmerged.csv")
+
 ```
