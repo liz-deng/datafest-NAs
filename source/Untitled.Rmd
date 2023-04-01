@@ -10,10 +10,10 @@ library(tidyverse)
 ```
 
 ```{r date functions and constants}
-time_limit <- as.POSIXct("2016-08-05", format = "%Y-%m-%d")
+time_limit <- as.POSIXct("2016-08-05", format = "%Y-%m-%d", tz = "UTC")
 
 get_time <- function(time) {
-  return(as.POSIXct(time, format = "%Y-%m-%d %H:%M:%OS"))
+  return(as.POSIXct(time, format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
 }
 ```
 
@@ -32,10 +32,22 @@ Identifying trends of questions being asked across time (from 2016-2022)
 
 ```{r}
 questions %>%
-  filter()
+  mutate(
+    AskedOnYear = year(get_time(AskedOnUtc)),
+    AskedOnMonth = (year(get_time(AskedOnUtc)) - 2016) * 12 + month(get_time(AskedOnUtc))
+  ) %>%
+  group_by(AskedOnMonth, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnMonth, y = n, color = Category)) +
+  geom_line()
 ```
 
 
 ```{r}
-merged_questionposts <- merge(questionpostsprocessed, questions, by = "QuestionUno")
+merged_questionposts <- merge(questionpostsprocessed, questions, by = "QuestionUno") %>%
+  select(Category, PostTextProcessed) %>%
+  write.csv(path = "/Users/wjtan/Downloads/DataFest 2023 Data For Distribution/datamerged.csv")
+
 ```
