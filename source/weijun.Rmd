@@ -23,6 +23,8 @@ get_time <- function(time) {
 clients <- read.csv("../../clients.csv") %>%
   select(EthnicIdentity, ClientUno)
 
+EthnicIdentity <- read.csv("../../EthnicIdentity.csv")
+
 questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
 
 questions <- read.csv("../../questions.csv") %>% 
@@ -39,7 +41,58 @@ questions <- read.csv("../../questions.csv") %>%
     )
 ```
 
-Identifying trends of questions being asked across time (from 2016-2022)
+### Top 10 Subcategories being Asked:
+  Family/Divorce/Custody	
+  Other	
+  Family/Divorce/Custody/Adoption	
+  Housing or Property Owned	
+  Debts & Purchases	
+  Family/Safety/Divorce/Custody	
+  Family Law Questions	
+  Civil/Constitutional Rights	
+  Housing/Landlord Tenant/Eviction/Foreclosure or Property Owned	
+  Housing or Real Estate
+
+```{r}
+questions %>%
+  group_by(Subcategory) %>%
+  summarize(
+    nn = n()
+  ) %>%
+  arrange(-nn)
+```
+
+### Top Three Ethnicities of Clients: 
+
+206490 (62.3%) of clients are identified as Caucasians, African American, and Latino/Hispanic. Caucasians has the biggest share (45%), followed by African American (11%) and Latino/Hispanic (8%). The actual values should be higher, given that 22% of the client prefer not to answer or has missing data for ethnic identity.
+
+(Note: Some clients have more than 1 identity)
+
+```{r}
+EthnicIdentity
+```
+
+
+### Questions being asked across time
+- Number of questions grows continuously, has a sharp increase in 2017 and 2020 
+  - No significant change in topic asked in 2017
+  - 35% of Work/Employment/Unemployment Question is asked in 2020 (Covid-19 Pandemic)
+  
+- Most questions are asked (indifferent of categories):
+  In January and July - September
+  No difference within days of a month
+  on Tuesday, during working hours
+
+```{r}
+questions %>%
+  filter(AskedOnYear == 2017) %>%
+  group_by(Subcategory) %>%
+  summarize(
+    nn = n()
+  ) %>%
+  arrange(-nn)
+```
+
 
 ```{r}
 questions %>%
@@ -112,16 +165,32 @@ questions %>%
     y = "Number of Question"
   )
 
-weekday_to_numeric <- function(x) {
-  as.numeric(format(x, "%u"))
+# weekday_to_number <- function(weekday) {
+#   switch(tolower(weekday),
+#          "sunday" = 1,
+#          "monday" = 2,
+#          "tuesday" = 3,
+#          "wednesday" = 4,
+#          "thursday" = 5,
+#          "friday" = 6,
+#          "saturday" = 7)
+# }
+
+weekdays_to_numbers <- function(weekdays) {
+  sapply(tolower(weekdays), function(weekday) {
+    switch(weekday,
+           "sunday" = 1,
+           "monday" = 2,
+           "tuesday" = 3,
+           "wednesday" = 4,
+           "thursday" = 5,
+           "friday" = 6,
+           "saturday" = 7)
+  })
 }
 
 questions %>%
-  group_by(AskedOnWeekdays, Category) %>%
-  summarize(
-    n = n()
-  ) %>%
-  ggplot(mapping = aes(x = weekday_to_numeric(AskedOnWeekdays), y = n)) +
+  ggplot(mapping = aes(x = weekdays_to_numbers(AskedOnWeekdays), fill = Category)) +
   geom_bar() +
   labs(
     title = "Number of questions asked for each category",
@@ -130,6 +199,22 @@ questions %>%
     y = "Number of Question"
   )
 
+```
+
+```{r}
+questions %>%
+  group_by(AskedOnMonth) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnMonth, y = n)) +
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Year",
+    y = "Number of Question"
+  )
 ```
 
 US Map showing density of categories for each US state
