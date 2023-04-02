@@ -8,6 +8,7 @@ date: "2023-04-01"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(usmap)
+library(gplots)
 ```
 
 ```{r date functions and constants}
@@ -18,18 +19,23 @@ get_time <- function(time) {
 }
 ```
 
-```{r Filter the data}
-questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
-```
-
 ```{r}
+clients <- read.csv("../../clients.csv") %>%
+  select(EthnicIdentity, ClientUno)
+
+questionpostsprocessed <- read.csv("../../questionpostsprocessed.csv")
+
 questions <- read.csv("../../questions.csv") %>% 
   filter(get_time(AskedOnUtc) > time_limit) %>%
   arrange(CategoryUno, QuestionUno) %>% 
   select(-c(CategoryUno, SubcategoryUno)) %>%
   mutate(AskedOnYear = year(get_time(AskedOnUtc)),
          AskedOnMonth = month(get_time(AskedOnUtc)),
-         AskedOnMonthYear = (year(get_time(AskedOnUtc)) - 2016) * 12 + month(get_time(AskedOnUtc))
+         AskedOnMonthYear = (year(get_time(AskedOnUtc)) - 2016) * 12 + month(get_time(AskedOnUtc)),
+         state = StateAbbr,
+         AskedOnDay = day(get_time(AskedOnUtc)),
+         AskedOnHour = hour(get_time(AskedOnUtc)),
+         AskedOnWeekdays = weekdays(get_time(AskedOnUtc))
     )
 ```
 
@@ -42,7 +48,13 @@ questions %>%
     n = n()
   ) %>%
   ggplot(mapping = aes(x = AskedOnMonthYear, y = n, color = Category)) +
-  geom_line()
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Months",
+    y = "Number of Question"
+  )
 
 questions %>%
   group_by(AskedOnYear, Category) %>%
@@ -50,7 +62,13 @@ questions %>%
     n = n()
   ) %>%
   ggplot(mapping = aes(x = AskedOnYear, y = n, color = Category)) +
-  geom_line()
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Year",
+    y = "Number of Question"
+  )
 
 questions %>%
   group_by(AskedOnMonth, Category) %>%
@@ -58,19 +76,69 @@ questions %>%
     n = n()
   ) %>%
   ggplot(mapping = aes(x = AskedOnMonth, y = n, color = Category)) +
-  geom_line()
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Months",
+    y = "Number of Question"
+  )
+
+questions %>%
+  group_by(AskedOnHour, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnHour, y = n, color = Category)) +
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Hours",
+    y = "Number of Question"
+  )
+
+questions %>%
+  group_by(AskedOnDay, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnDay, y = n, color = Category)) +
+  geom_line() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Days",
+    y = "Number of Question"
+  )
+
+weekday_to_numeric <- function(x) {
+  as.numeric(format(x, "%u"))
+}
+
+questions %>%
+  group_by(AskedOnWeekdays, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = weekday_to_numeric(AskedOnWeekdays), y = n)) +
+  geom_bar() +
+  labs(
+    title = "Number of questions asked for each category",
+    subtitle = "August 5, 2016 to 27 January 27, 2022",
+    x = "Days",
+    y = "Number of Question"
+  )
+
 ```
 
-US Map showing change of categories
+US Map showing density of categories for each US state
 
 ```{r}
-df <- questions %>%
-  mutate(state = StateAbbr)
-
 vector_of_category <- c("Family and Children", "Other", "Housing and Homelessness", "Consumer Financial Questions", "Individual Rights", "Income Maintenance", "Health and Disability", "Education", "Juvenile")
 
 plot_map <- function(category) {
-  subset <- df %>%
+  subset <- questions %>%
     filter(Category == category) %>%
     group_by(state) %>%
     summarize(
@@ -88,9 +156,81 @@ map(vector_of_category, plot_map)
 
 ```
 
+Average Response time for each category (bar chart)
+
+```{r}
+plot_response <- function(category) {
+  subset <- questions %>%
+    filter(TakenOnUtc != "NULL" & AskedOnUtc != "NULL" & (category == "" | Category == category)) %>%
+    mutate(response_time = as.numeric(difftime(get_time(TakenOnUtc), get_time(AskedOnUtc)))) %>%
+    group_by(state) %>%
+    summarize(
+      values = mean(response_time) / 3600 / 24,
+    )
+  
+  plot_usmap(data = subset) +
+    scale_fill_continuous(
+      low = "white", high = "red", name = "Average response time (days)", label = scales::comma
+    ) + theme(legend.position = "right") +
+    labs(title = category)
+}
+
+map(vector_of_category, plot_response)
+```
+
+Plot of US
+
+```{r}
+plot_response("")
+```
+
+```{r}
+subset <- questions %>%
+    filter(TakenOnUtc != "NULL" & AskedOnUtc != "NULL") %>%
+    mutate(response_time = as.numeric(difftime(get_time(TakenOnUtc), get_time(AskedOnUtc)))) %>%
+    group_by(Category, state) %>%
+    summarize(
+      values = mean(response_time) / 3600 / 24,
+    )
+
+# subsubset <- subset %>%
+#   filter(values > 30) %>%
+#   write.csv(file = "../../test.csv")
+
+# new_table <- with(subsubset, balloonplot(x = Category, y = state, z = values,
+#                   label = FALSE, show.margins = FALSE))
+```
+
+```{r}
+bad_states <- c("AL", "GA", "SC", "UT")
+
+questions %>%
+  filter(state %in% bad_states) %>%
+  group_by(AskedOnMonthYear, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  ggplot(mapping = aes(x = AskedOnMonthYear, y = n, color = Category)) +
+  geom_line()
+```
+
+```{r}
+questions %>%
+  filter(state %in% bad_states) %>%
+  
+```
+
 ```{r}
 merged_questionposts <- merge(questionpostsprocessed, questions, by = "QuestionUno") %>%
   select(Subcategory, PostTextProcessed) %>%
   write.csv(file = "datasubmerged.csv")
+```
 
+```{r}
+questions %>%
+  group_by(AskedOnMonthYear, Category) %>%
+  summarize(
+    n = n()
+  ) %>%
+  write.csv(file = "../../line.csv")
 ```
