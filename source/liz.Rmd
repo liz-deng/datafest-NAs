@@ -13,7 +13,7 @@ library("ggplot2")
 library("usmap")
 ```
 
-```{r wrangling}
+```{r, echo = FALSE}
 pop <- read.csv("../../census_pop.csv") 
 
 
@@ -62,7 +62,9 @@ questions <- select(data, q_per1k, state)
 qstate_shape <- map_data("state") %>%
   rename(state = region) %>%
   left_join(questions, by="state")
-  
+```
+
+```{r}  
 #------Questions-------
   ggplot(qstate_shape) +
     geom_polygon(
@@ -83,7 +85,11 @@ qstate_shape <- map_data("state") %>%
         )
 
 #------Lawyers-----------
+```
 
+
+
+```{r}
 
 lstate_shape <- map_data("state") %>%
   rename(state = region) %>%
@@ -92,12 +98,12 @@ lstate_shape <- map_data("state") %>%
  ggplot(lstate_shape) +
     geom_polygon(
       mapping = aes(x = long, y = lat, group = group, fill = lawyers_per1k),
-      color = "#62040A",
+      color = "#010923",
       size = .08
     ) +
     coord_map() +
-    scale_fill_continuous(low = "white", high = "#D9000D", na.value = "#A3A3A3") +
-    labs(fill = "Active Lawyers per 1000 People", title="Rate of Lawyers") +
+    scale_fill_continuous(low = "white", high = "steelblue", na.value = "#A3A3A3") +
+    labs(fill = "Lawyers per 1000 people", title="Active Lawyers per State") +
      theme(
         axis.text.x=element_blank(), 
         axis.title.x = element_blank(),
@@ -106,6 +112,10 @@ lstate_shape <- map_data("state") %>%
         axis.text.y=element_blank(),  
         axis.ticks.y=element_blank()  
         )
+ 
+ ```
+ 
+ ```{r echo=FALSE}
 #------------wrangling hours------------
  
 all_entries <- read.csv("../../attorneytimeentries.csv")
@@ -142,7 +152,11 @@ hrs_perlawyer <- both %>%
   ) 
 
 # View(hrs_perlawyer)
+```
 
+
+
+```{r}
 hrsstate_shape <- map_data("state") %>%
   rename(state = region) %>%
   left_join(hrs_perlawyer, by="state")
@@ -150,11 +164,11 @@ hrsstate_shape <- map_data("state") %>%
  ggplot(hrsstate_shape) +
     geom_polygon(
       mapping = aes(x = long, y = lat, group = group, fill = log(1 + hrs_perlawyer)),
-      color = "#042802",
+      color = "#010923",
       size = .08
     ) +
     coord_map() +
-    scale_fill_continuous(low = "#F1FFEC", high = "#164306", na.value = "#A3A3A3") +
+    scale_fill_continuous(low = "white", high = "steelblue", na.value = "#A3A3A3") +
     labs(fill = "Hours per Lawyer (in log scale)", title="Hours Answered per Volunteer") +
      theme(
         axis.text.x=element_blank(), 

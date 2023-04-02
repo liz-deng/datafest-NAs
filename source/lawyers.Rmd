@@ -1,0 +1,114 @@
+---
+title: "lawyers"
+output: html_document
+date: "2023-04-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tidyverse")
+library("ggplot2")
+library("usmap")
+```
+
+```{r questions per volunteer, echo=FALSE}
+volunteer_data <- read.csv("../../attorneys.csv") %>%
+  select(c(2, 3, 6, 7, 8)) %>%
+  count(StateAbbr) %>%
+  rename(num_volunteers = n)
+
+# View(volunteer_data)
+
+
+
+all_q <- read.csv("../../questionpostsprocessed.csv") %>% 
+  count(StateAbbr) %>%
+  filter(StateAbbr %in% volunteer_data$StateAbbr) %>%
+  rename(num_q = n)
+
+q_plus_vol <- left_join(volunteer_data, all_q, by="StateAbbr")
+
+ratio <- round(q_plus_vol$num_q / q_plus_vol$num_volunteers, 2)
+print(ratio)
+
+fullname <- state.name[match(q_plus_vol$StateAbbr, state.abb)]
+
+q_plus_vol <- mutate(q_plus_vol, proportion = ratio, state = tolower(fullname))
+#View(q_plus_vol)
+
+#View(all_q)
+
+
+qtovol_state <- map_data("state") %>%
+  rename(state = region) %>%
+  left_join(q_plus_vol, by="state")
+
+
+
+ ggplot(qtovol_state) +
+    geom_polygon(
+      mapping = aes(x = long, y = lat, group = group, fill = proportion),
+      color = "#010923",
+      size = .08
+    ) +
+    coord_map() +
+    scale_fill_continuous(low = "white", high = "steelblue", na.value = "#A3A3A3") +
+    labs(fill = "Questions per Lawyer", title="Ratio of Questions Asked to Volunteers") +
+     theme(
+        axis.text.x=element_blank(), 
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(),  
+        axis.ticks.y=element_blank()  
+        )
+
+
+```
+
+```{r hours per volunteer, echo=FALSE}
+
+
+hours <- read.csv("../../attorneytimeentries.csv") %>% 
+  count(StateAbbr) %>%
+  filter(StateAbbr %in% volunteer_data$StateAbbr) %>%
+  rename(num_hrs = n)
+
+hrs_plus_vol <- left_join(volunteer_data, all_q, by="StateAbbr")
+
+ratiohrs <- round(hrs_plus_vol$num_hrs / hrs_plus_vol$num_volunteers, 2)
+
+
+fullname <- state.name[match(q_plus_vol$StateAbbr, state.abb)]
+
+hrs_plus_vol <- mutate(hrs_plus_vol, proportion = ratio, state = tolower(fullname))
+
+
+
+hrstovol_state <- map_data("state") %>%
+  rename(state = region) %>%
+  left_join(hrs_plus_vol, by="state")
+
+
+
+ ggplot(hrstovol_state) +
+    geom_polygon(
+      mapping = aes(x = long, y = lat, group = group, fill = proportion),
+      color = "#010923",
+      size = .08
+    ) +
+    coord_map() +
+    scale_fill_continuous(low = "white", high = "steelblue", na.value = "#A3A3A3") +
+    labs(title="Hours per Attorney") +
+     theme(
+        axis.text.x=element_blank(), 
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(),  
+        axis.ticks.y=element_blank()  
+        )
+
+
+
+```
