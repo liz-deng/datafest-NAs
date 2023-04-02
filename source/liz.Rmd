@@ -84,6 +84,7 @@ qstate_shape <- map_data("state") %>%
 
 #------Lawyers-----------
 
+
 lstate_shape <- map_data("state") %>%
   rename(state = region) %>%
   left_join(lawyers, by="state")
@@ -105,5 +106,70 @@ lstate_shape <- map_data("state") %>%
         axis.text.y=element_blank(),  
         axis.ticks.y=element_blank()  
         )
+#------------wrangling hours------------
+ 
+all_entries <- read.csv("../../attorneytimeentries.csv")
+volunteers <- read.csv("../../attorneys.csv")
+ 
+l_eastate <- volunteers %>%
+  count(StateAbbr) %>%
+  rename(num_volunteers = n,
+         state = StateAbbr) 
+
+#View(l_eastate)
+
+state_hrs <- all_entries %>% 
+  group_by(StateAbbr) %>%
+  summarise(sum(Hours, na.rm = TRUE)) %>%
+  rename(total = 2,) %>%
+  slice(-33) %>%
+  rename(state = StateAbbr)
+
+
+matching <- filter(l_eastate, l_eastate$state %in% state_hrs$state)
+
+
+both <- left_join(matching, state_hrs, by="state") %>%
+  rename(total_hrs = total)
+
+statenames <- state.name[match(state_hrs$state, state.abb)]
+
+
+hrs_perlawyer <- both %>% 
+  mutate(
+    state = tolower(statenames),
+    hrs_perlawyer = round((total_hrs / num_volunteers), 2)
+  ) 
+
+# View(hrs_perlawyer)
+
+hrsstate_shape <- map_data("state") %>%
+  rename(state = region) %>%
+  left_join(hrs_perlawyer, by="state")
+
+ ggplot(hrsstate_shape) +
+    geom_polygon(
+      mapping = aes(x = long, y = lat, group = group, fill = log(1 + hrs_perlawyer)),
+      color = "#042802",
+      size = .08
+    ) +
+    coord_map() +
+    scale_fill_continuous(low = "#F1FFEC", high = "#164306", na.value = "#A3A3A3") +
+    labs(fill = "Hours per Lawyer (in log scale)", title="Hours Answered per Volunteer") +
+     theme(
+        axis.text.x=element_blank(), 
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.text.y=element_blank(),  
+        axis.ticks.y=element_blank()  
+        )
+
+
+
 
 ```
+
+
+
+
