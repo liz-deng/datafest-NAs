@@ -20,8 +20,7 @@ get_time <- function(time) {
 ```
 
 ```{r}
-clients <- read.csv("../../clients.csv") %>%
-  select(EthnicIdentity, ClientUno)
+clients <- read.csv("../../clients.csv")
 
 EthnicIdentity <- read.csv("../../EthnicIdentity.csv")
 
@@ -40,6 +39,15 @@ questions <- read.csv("../../questions.csv") %>%
          AskedOnWeekdays = weekdays(get_time(AskedOnUtc))
     )
 ```
+
+```{r}
+subset <- clients %>%
+  filter(Age != "NULL") %>%
+  mutate(Age = as.numeric(Age))
+
+summary(subset$Age)
+```
+
 
 ### Top 10 Subcategories being Asked:
   Family/Divorce/Custody	
@@ -255,7 +263,7 @@ plot_response <- function(category) {
   
   plot_usmap(data = subset) +
     scale_fill_continuous(
-      low = "white", high = "red", name = "Average response time (days)", label = scales::comma
+      low = "white", high = "steelblue", name = "Average response time (days)", label = scales::comma
     ) + theme(legend.position = "right") +
     labs(title = category)
 }
@@ -267,6 +275,34 @@ Plot of US
 
 ```{r}
 plot_response("")
+# subset <- questions %>%
+#     filter(TakenOnUtc != "NULL" & AskedOnUtc != "NULL") %>%
+#     mutate(response_time = as.numeric(difftime(get_time(TakenOnUtc), get_time(AskedOnUtc)))) %>%
+#     group_by(state) %>%
+#     summarize(
+#       values = mean(response_time) / 3600 / 24,
+#     )
+```
+
+```{r}
+subset <- questions %>%
+    filter(TakenOnUtc != "NULL" & AskedOnUtc != "NULL") %>%
+    mutate(response_time = as.numeric(difftime(get_time(TakenOnUtc), get_time(AskedOnUtc)))) %>%
+    group_by(state, Category) %>%
+    summarize(
+      values = mean(response_time) / 3600 / 24,
+    ) %>%
+    write.csv(file = "response_time.csv")
+```
+
+```{r}
+subset <- questions %>%
+    filter(TakenOnUtc != "NULL" & AskedOnUtc != "NULL") %>%
+    mutate(response_time = as.numeric(difftime(get_time(TakenOnUtc), get_time(AskedOnUtc)))) %>%
+    summarize(
+      values = mean(response_time) / 3600 / 24,
+    )
+```
 ```
 
 ```{r}
